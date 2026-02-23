@@ -1,0 +1,105 @@
+/* गेम की स्क्रीन को फुल-स्क्रीन बनाने और फालतू स्क्रॉल/ज़ूम रोकने के लिए */
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #87CEEB;
+    touch-action: none; 
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none; 
+}
+
+/* 3D कैनवस */
+canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* UI कंटेनर */
+#ui-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; 
+    display: flex;
+    justify-content: space-between; 
+    align-items: flex-end; 
+    padding: 30px; 
+    box-sizing: border-box;
+}
+
+/* चलने वाले बटन्स (Left Side) */
+#joystick-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    pointer-events: auto;
+}
+
+.horizontal-btns {
+    display: flex;
+    gap: 30px; 
+    margin: 5px 0;
+}
+
+/* एक्शन बटन का एरिया (Right Side) */
+#action-area {
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px; /* गाड़ी और कूदने वाले बटन के बीच दूरी */
+    margin-bottom: 20px;
+}
+
+/* सभी बटन्स का बेस डिज़ाइन */
+button {
+    background: rgba(0, 0, 0, 0.5); 
+    color: white;
+    border: 3px solid rgba(255, 255, 255, 0.3); 
+    border-radius: 50%; 
+    font-size: 24px; /* आइकन्स बड़े दिखेंगे */
+    font-weight: bold;
+    width: 65px;
+    height: 65px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.4); 
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+    backdrop-filter: blur(5px);
+    transition: transform 0.1s, background 0.1s;
+}
+
+/* बटन दबाने पर इफ़ेक्ट */
+button:active {
+    background: rgba(255, 255, 255, 0.8);
+    color: #000;
+    transform: scale(0.85);
+}
+
+/* 🚗 गाड़ी में बैठने वाला बटन */
+#btn-enter {
+    background: rgba(0, 100, 255, 0.6); /* नीला रंग */
+    border-color: rgba(255, 255, 255, 0.6);
+    font-size: 30px;
+}
+
+/* 🚀 कूदने (Jump) वाला बटन */
+#btn-jump {
+    width: 80px;
+    height: 80px;
+    font-size: 14px;
+    background: rgba(255, 69, 0, 0.7); /* संतरी-लाल रंग */
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+#btn-jump:active {
+    background: rgba(255, 69, 0, 1);
+}
