@@ -1,6 +1,9 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
+// ==========================================
+// 1. SETUP & LOADER
+// ==========================================
 const manager = new THREE.LoadingManager();
 manager.setURLModifier((url) => {
     if (url.includes('colormap.png')) return 'colormap.png'; 
@@ -25,7 +28,7 @@ const collidableMeshes = [];
 const raycaster = new THREE.Raycaster();
 
 // ==========================================
-// 1. MEGA CITY BUILDER
+// 2. MEGA CITY BUILDER (80+ Tall Buildings)
 // ==========================================
 function createWorld() {
     scene.add(new THREE.AmbientLight(0xffffff, 0.8));
@@ -39,8 +42,9 @@ function createWorld() {
     );
     ground.rotation.x = -Math.PI / 2;
     scene.add(ground);
-    collidableMeshes.push(ground); 
+    collidableMeshes.push(ground);
 
+    // सड़क का जाल
     const tracks = ['roadStart.glb', 'roadStraight.glb', 'roadRamp.glb', 'roadCornerLarge.glb'];
     tracks.forEach((m, i) => {
         loader.load(m, (gltf) => {
@@ -51,6 +55,7 @@ function createWorld() {
         });
     });
 
+    // गगनचुंबी इमारतें (4 गलियों में)
     const buildingList = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t'];
     const streetOffsets = [-250, -110, 110, 250]; 
     
@@ -59,18 +64,16 @@ function createWorld() {
             loader.load(`building-${char}.glb`, (gltf) => {
                 const obj = gltf.scene;
                 const baseScale = 20 + Math.random() * 10;
-                const heightBoost = baseScale * (1 + Math.random() * 1.5); 
+                const heightBoost = baseScale * (1.2 + Math.random() * 2); 
                 obj.scale.set(baseScale, heightBoost, baseScale); 
-                obj.position.set(xPos, 0, -i * 80 - Math.random() * 50);
+                obj.position.set(xPos, 0, -i * 85 - Math.random() * 50);
                 scene.add(obj);
-
-                obj.traverse(child => {
-                    if (child.isMesh) collidableMeshes.push(child);
-                });
+                obj.traverse(child => { if (child.isMesh) collidableMeshes.push(child); });
             });
         });
     });
 
+    // गाड़ियाँ
     const models = ['police.glb', 'ambulance.glb', 'tractor.glb', 'taxi.glb', 'suv.glb', 'firetruck.glb'];
     models.forEach((name, i) => {
         loader.load(name, (gltf) => {
@@ -84,23 +87,20 @@ function createWorld() {
 }
 
 // ==========================================
-// 2. PLAYER & PHYSICS
+// 3. PLAYER & PHYSICS (Stan.gltf)
 // ==========================================
 class Player {
     constructor() {
         this.mesh = new THREE.Group();
         scene.add(this.mesh);
         
-        loader.load('player.glb', (gltf) => {
+        // Stan कैरेक्टर लोड (छोटी हाइट के साथ)
+        loader.load('stan.gltf', (gltf) => {
             this.model = gltf.scene;
-            this.model.scale.set(4, 4, 4);
+            this.model.scale.set(0.7, 0.7, 0.7); // हाइट छोटी की
             const tex = texLoader.load('humanMaleA.png');
             tex.flipY = false;
-            this.model.traverse(node => { if (node.isMesh) node.material = new THREE.MeshLambertMaterial({ map: tex }); });
-            this.mesh.add(this.model);
-        }, undefined, (e) => {
-            this.model = new THREE.Mesh(new THREE.BoxGeometry(4, 8, 4), new THREE.MeshLambertMaterial({color: 0xff0000}));
-            this.model.position.y = 4;
+            this.model.traverse(node => { if (node.isMesh) node.material.map = tex; });
             this.mesh.add(this.model);
         });
 
@@ -121,10 +121,7 @@ class Player {
         bind('btn-up', 'f'); bind('btn-down', 'b');
         bind('btn-left', 'l'); bind('btn-right', 'r');
         bind('btn-jump', 'flying');
-
-        document.getElementById('btn-enter')?.addEventListener('touchstart', (e) => {
-            e.preventDefault(); this.toggleVehicle();
-        });
+        document.getElementById('btn-enter')?.addEventListener('touchstart', (e) => { e.preventDefault(); this.toggleVehicle(); });
     }
 
     toggleVehicle() {
@@ -148,60 +145,40 @@ class Player {
         const speed = this.inCar ? 3.5 : 1.5;
         const target = this.inCar ? this.currentCar : this.mesh;
 
+        // Laser Physics: छत और दीवार ढूँढना
         let floorY = 0;
         raycaster.set(new THREE.Vector3(target.position.x, target.position.y + 10, target.position.z), new THREE.Vector3(0, -1, 0));
         let downHits = raycaster.intersectObjects(collidableMeshes, false);
-        
-        if (downHits.length > 0) {
-            floorY = downHits[0].point.y; 
-        }
+        if (downHits.length > 0) floorY = downHits[0].point.y; 
         if (this.inCar) floorY += 0.5; 
 
-        if (this.move.flying) {
-            this.velocityY = 2.0; 
-        } else {
-            this.velocityY -= 0.2; 
-            if (this.velocityY < -4.0) this.velocityY = -4.0; 
-        }
+        // सुपर पावर उड़ान
+        if (this.move.flying) this.velocityY = 2.0; 
+        else { this.velocityY -= 0.2; if (this.velocityY < -4.0) this.velocityY = -4.0; }
+        
         target.position.y += this.velocityY;
+        if (target.position.y <= floorY) { target.position.y = floorY; this.velocityY = 0; }
 
-        if (target.position.y <= floorY) {
-            target.position.y = floorY;
-            this.velocityY = 0;
-        }
-
-        let moveX = 0;
-        let moveZ = 0;
-
-        if(this.move.f) {
-            moveZ -= Math.cos(target.rotation.y) * speed;
-            moveX -= Math.sin(target.rotation.y) * speed;
-        }
-        if(this.move.b) {
-            moveZ += Math.cos(target.rotation.y) * speed;
-            moveX += Math.sin(target.rotation.y) * speed;
-        }
+        // मूवमेंट और दीवार से टक्कर
+        let moveX = 0, moveZ = 0;
+        if(this.move.f) { moveZ -= Math.cos(target.rotation.y) * speed; moveX -= Math.sin(target.rotation.y) * speed; }
+        if(this.move.b) { moveZ += Math.cos(target.rotation.y) * speed; moveX += Math.sin(target.rotation.y) * speed; }
 
         if (moveX !== 0 || moveZ !== 0) {
             let moveDir = new THREE.Vector3(moveX, 0, moveZ).normalize();
             raycaster.set(new THREE.Vector3(target.position.x, target.position.y + 3, target.position.z), moveDir);
             let fwdHits = raycaster.intersectObjects(collidableMeshes, false);
-
-            if (fwdHits.length > 0 && fwdHits[0].distance < (speed + 4)) {
-                // टक्कर! रुक जाओ
-            } else {
-                target.position.x += moveX;
-                target.position.z += moveZ;
+            if (!(fwdHits.length > 0 && fwdHits[0].distance < (speed + 4))) {
+                target.position.x += moveX; target.position.z += moveZ;
             }
         }
-
         if(this.move.l) target.rotation.y += 0.06;
         if(this.move.r) target.rotation.y -= 0.06;
     }
 }
 
 // ==========================================
-// 3. ENGINE LOOP & PERFECT CAMERA
+// 4. ENGINE LOOP & CAMERA
 // ==========================================
 createWorld();
 const player = new Player();
@@ -209,22 +186,16 @@ const player = new Player();
 function animate() {
     requestAnimationFrame(animate);
     player.update();
-    
     const target = player.inCar ? player.currentCar : player.mesh;
     
-    // 🎥 नया कैमरा सेटअप (Player के एकदम पास)
-    const camDist = player.inCar ? 35 : 20; // पैदल है तो 20 पास, गाड़ी में 35
-    const camHeight = player.inCar ? 12 : 7; // पैदल है तो 7 ऊँचा, गाड़ी में 12
-
+    // GTA स्टाइल कैमरा
+    const camDist = player.inCar ? 35 : 20; 
+    const camHeight = player.inCar ? 12 : 7; 
     const offset = new THREE.Vector3(0, camHeight, camDist);
     offset.applyQuaternion(target.quaternion);
     
-    // कैमरा को स्मूथली प्लेयर के पीछे ले जाना
     camera.position.lerp(target.position.clone().add(offset), 0.15); 
-    
-    // कैमरा को हमेशा प्लेयर के सिर/छाती की तरफ देखने के लिए सेट करना
     camera.lookAt(target.position.x, target.position.y + 5, target.position.z);
-
     renderer.render(scene, camera);
 }
 animate();
