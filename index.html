@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Indian Game Universe - Mobile 3D</title>
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+      }
+    </script>
+
+    <div id="ui-container">
+        
+        <div id="joystick-area">
+            <button id="btn-up" class="control-btn">▲</button>
+            <div class="horizontal-btns">
+                <button id="btn-left" class="control-btn">◀</button>
+                <button id="btn-right" class="control-btn">▶</button>
+            </div>
+            <button id="btn-down" class="control-btn">▼</button>
+        </div>
+
+        <div id="action-area" style="display: flex; flex-direction: column; gap: 15px; align-items: center;">
+            <button id="btn-enter" class="action-btn" style="background: rgba(0, 100, 255, 0.8); width: 70px; height: 70px;">🚗</button>
+            <button id="btn-jump" class="action-btn">JUMP</button>
+        </div>
+
+    </div>
+
+    <script type="module" src="main.js"></script>
+
+</body>
+</html>
